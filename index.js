@@ -463,4 +463,8 @@ app.listen(PORT, '0.0.0.0', () => {
 });
 
 // Start the bot
+if (!process.env.DISCORD_TOKEN) {
+    log.error('DISCORD_TOKEN is not set in environment variables!');
+    process.exit(1);
+}
 client.login(process.env.DISCORD_TOKEN); 
