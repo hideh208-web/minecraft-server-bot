@@ -73,9 +73,8 @@ function updatePlayerHistory(serverId, playerCount, maxHistory = 24) {
     const history = playerHistory.get(serverId) || [];
     const currentTime = Date.now();
     
-    // If history is empty or it's been 5 minutes since last record
-    // This will create more frequent records initially until we have enough data
-    const timeBetweenRecords = history.length < 24 ? 300000 : 3600000; // 5 minutes or 1 hour
+    // Initial data points every 1 minute for the first 5 records, then every hour
+    const timeBetweenRecords = history.length < 5 ? 60000 : 3600000; 
     
     if (history.length === 0 || 
         (currentTime - history[history.length - 1].timestamp) >= timeBetweenRecords) {
@@ -101,8 +100,8 @@ function updatePlayerHistory(serverId, playerCount, maxHistory = 24) {
 // Generate player count chart
 async function generatePlayerChart(serverId, color = '#3498db') {
     const history = playerHistory.get(serverId) || [];
-    if (history.length < 2) {
-        log.warn(`Not enough history data for chart (${history.length} records)`);
+    if (history.length === 0) {
+        log.warn(`No history data for chart`);
         return null;
     }
 
@@ -122,13 +121,17 @@ async function generatePlayerChart(serverId, color = '#3498db') {
 
     const data = history.map(entry => entry.count);
 
+    // If only one data point, duplicate it to show a line/point
+    const chartLabels = labels.length === 1 ? [labels[0], labels[0]] : labels;
+    const chartData = data.length === 1 ? [data[0], data[0]] : data;
+
     new Chart(ctx, {
         type: 'line',
         data: {
-            labels,
+            labels: chartLabels,
             datasets: [{
                 label: 'Player Count',
-                data,
+                data: chartData,
                 borderColor: color,
                 backgroundColor: color + '33', // Add transparency
                 borderWidth: 2,
@@ -440,7 +443,7 @@ app.use(express.static(path.join(__dirname)));
 
 // Express routes
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'uptimer.html'));
+    res.send('<h1>Bot is Online!</h1><p>Monitoring Minecraft servers...</p><a href="/status">Check JSON Status</a>');
 });
 
 app.get('/status', (req, res) => {
